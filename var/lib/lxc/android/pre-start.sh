@@ -16,6 +16,27 @@ mount_android_partitions() {
 	done
 }
 
+unmount_android_partitions() {
+    fstab=$1
+    lxc_rootfs_path=$2
+    cat ${fstab} | while read line; do
+        set -- $line
+        # Skip any unwanted entry
+        echo $1 | egrep -q "^#" && continue
+        ([ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]) && continue
+        ([ "$3" = "emmc" ] || [ "$3" = "swap" ] || [ "$3" = "mtd" ]) && continue
+        [ ! -d "$2" ] && continue
+
+	umount ${lxc_rootfs_path}/$2
+        done
+}
+
+if [ -f "/tmp/lxc_android_once" ]; then
+	echo "android lxc has already been started once."
+        exit -255;
+fi
+touch /tmp/lxc_android_once
+
 INITRD=/system/boot/android-ramdisk.img
 rm -Rf $LXC_ROOTFS_PATH
 mkdir -p $LXC_ROOTFS_PATH
